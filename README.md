@@ -1,4 +1,4 @@
-#CELOCHAT
+# CELOCHAT
 this is a simple chat room that run on the celo blockchain
 
 follow the link to the site
