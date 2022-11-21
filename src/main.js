@@ -2,8 +2,6 @@ import Web3 from "web3";
 import { newKitFromWeb3 } from "@celo/contractkit";
 
 import chatRoomAbi from '../contract/marketplace.abi.json'
-import { Input } from "@mui/material";
-
 
 const MPContractAddress = "0x40374Fbf011F8d64530B1F7c725e05DD98DaA59D"
 
@@ -73,6 +71,7 @@ const getMessages = async function() {
     }
 
 
+
 function messageTemplate (_message){
         return `
         <div class="message my-message">
@@ -81,7 +80,7 @@ function messageTemplate (_message){
           <div class="text">${_message.message}</div>
           <div class="date">${datetojs(_message.date)}</div>
           <div class="rating">
-              <p>rating: ${_message.rating[0]} by ${_message.rating[1]}</p>
+              <p>rating: ${Number(_message.rating[1]) /Number(_message.rating[0])} by ${_message.rating[1]}</p>
               <div class="dropdown">
               
               <a class="btn btn-dark rounded-pill rate btn"
@@ -140,6 +139,10 @@ document
       uname,
       document.getElementById("message-input").value,
     ]
+    if(params[1].length === 0){
+      notification(`⚠️ Empty message...`);
+      return;
+    }
     notification(`⌛ Adding "${params[0]}"...`)
     document.getElementById("message-input").innerHTML= " "
     // send the messages
@@ -158,7 +161,7 @@ document
 
 // convert the solidity date to a string
 function datetojs(timestamp){
-    var test = new Date(timestamp*1000);
+    var test = new Date(timestamp *1000);
     return test.toLocaleString()
 }
 
