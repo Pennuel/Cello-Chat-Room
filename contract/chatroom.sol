@@ -5,10 +5,8 @@ pragma solidity >=0.7.0 <0.9.0;
 contract ClassGroupChat{
     uint internal messageLength = 0;
     struct MessageRating{
-        uint current_rate;
         uint total_raters;
         uint total_rate;
-        uint rated;
     }
 
     struct Message{
@@ -20,24 +18,35 @@ contract ClassGroupChat{
     }
 
 
-    mapping (uint => Message) internal messages;
+    mapping (uint => Message) private messages;
 
+    mapping(uint => mapping(address => bool)) public rated;
+
+
+    /**
+        * @dev allow users to add a message to the platform
+        * @notice content of message can't be empty
+     */
     function createMessage(
-		string memory _name,
-		string memory _message
+		string calldata _name,
+		string calldata _message
 	) public {
-        uint _date = block.timestamp;
-
+        require(bytes(_name).length > 0,"Empty name");
+        require(bytes(_message).length > 0,"Empty message");
 		messages[messageLength] = Message(
 			payable(msg.sender),
 			_name,
 			_message,
-            _date,
-            MessageRating(0,0,0,0)
+            block.timestamp,
+            MessageRating(0,0)
 		);
         messageLength++;
 	}
 
+
+    /**
+        * @dev allow users to retrieve a message
+     */
     function viewMessages(uint _index) public view returns (
 		address payable,
 		string memory, 
@@ -45,27 +54,40 @@ contract ClassGroupChat{
         uint,
         MessageRating memory
 	) {
+        Message storage currentMessage = messages[_index];
 		return (
-			messages[_index].owner, 
-			messages[_index].name, 
-			messages[_index].message,
-			messages[_index].date,
-			messages[_index].rating
+			currentMessage.owner, 
+			currentMessage.name, 
+			currentMessage.message,
+			currentMessage.date,
+			currentMessage.rating
 		);
 	}
 
 
-// calculate the rating of a product upon rating 
+    /**
+        * @dev allow users to write a rating for a message
+        * @notice Users can only rate once and the rating has to be from 1 to 5
+     */ 
     function writeRating(uint _index, uint rate ) public{
-       if (messages[_index].rating.rated == 0){
-            messages[_index].rating.total_rate += rate;
-            messages[_index].rating.total_raters += 1;
-            messages[_index].rating.current_rate =messages[_index].rating.total_rate /messages[_index].rating.total_raters;
-            messages[_index].rating.rated = 1;
-       }
+        require(!rated[_index][msg.sender], "You have already rated this message");
+        require(rate > 0 && rate <= 5, "Rate can only be 1 up to 5");
+        Message storage currentMessage = messages[_index];
+        rated[_index][msg.sender] = true;
+        currentMessage.rating.total_rate += rate;
+        currentMessage.rating.total_raters += 1;
     }
 
-// generate the message lengths
+    /**
+        @dev allow users to delete their message
+     */
+    function deleteMessage(uint _index) public {
+        require(messages[_index].owner == msg.sender);
+        delete(messages[_index]);
+    }
+
+
+    /// @return messageLength the current number of messages
 	function getMessageLength() public view returns (uint) {
 		return (messageLength);
 	}
