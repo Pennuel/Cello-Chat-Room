@@ -28,7 +28,6 @@ contract ClassGroupChat {
         _;
     }
 
-
     /**
      * @dev allow users to add a message to the platform
      * @notice content of message can't be empty
@@ -73,12 +72,18 @@ contract ClassGroupChat {
         );
     }
 
-    
+
     function editMessages(uint _index, string calldata message) public {
         Message storage currentMessage = messages[_index];
         require(msg.sender == currentMessage.owner);
         currentMessage.message = message;
         currentMessage.date = block.timestamp;
+    }
+
+    function changeUsername(uint _index, string calldata new_username) public {
+        Message storage currentMessage = messages[_index];
+        require(msg.sender == currentMessage.owner);
+        currentMessage.name = new_username;
     }
 
     /**
