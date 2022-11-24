@@ -4,6 +4,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract ClassGroupChat {
     uint internal messageLength = 0;
+    address admin;
     struct MessageRating {
         uint total_raters;
         uint total_rate;
@@ -15,6 +16,7 @@ contract ClassGroupChat {
         string message;
         uint date;
         uint upvotes;
+        bool verified;
         MessageRating rating;
     }
 
@@ -26,6 +28,10 @@ contract ClassGroupChat {
     modifier notOwner(uint index) {
         require(messages[index].owner != msg.sender, "You are the owner");
         _;
+    }
+
+    constructor() {
+        admin = msg.sender;
     }
 
     /**
@@ -43,6 +49,7 @@ contract ClassGroupChat {
             _message,
             block.timestamp,
             0,
+            false,
             MessageRating(0, 0)
         );
         messageLength++;
@@ -59,6 +66,8 @@ contract ClassGroupChat {
             string memory,
             string memory,
             uint,
+            uint,
+            bool,
             MessageRating memory
         )
     {
@@ -68,29 +77,36 @@ contract ClassGroupChat {
             currentMessage.name,
             currentMessage.message,
             currentMessage.date,
+            currentMessage.upvotes,
+            currentMessage.verified,
             currentMessage.rating
         );
     }
 
-
     function editMessages(uint _index, string calldata message) public {
         Message storage currentMessage = messages[_index];
-        require(msg.sender == currentMessage.owner);
+        require(msg.sender == currentMessage.owner || msg.sender == admin, "For owner and admin");
         currentMessage.message = message;
         currentMessage.date = block.timestamp;
     }
 
     function changeUsername(uint _index, string calldata new_username) public {
         Message storage currentMessage = messages[_index];
-        require(msg.sender == currentMessage.owner);
+        require(msg.sender == currentMessage.owner || msg.sender == admin, "For owner and admin");
         currentMessage.name = new_username;
+    }
+
+    function verifyUser(uint _index) public {
+        require(msg.sender == admin, "You are not the admin");
+        Message storage currentMessage = messages[_index];
+        currentMessage.verified = !currentMessage.verified;
     }
 
     /**
      * @dev allow users to write a rating for a message
      * @notice Users can only rate once and the rating has to be from 1 to 5
      */
-    function writeRating(uint _index, uint rate) public notOwner(_index){
+    function writeRating(uint _index, uint rate) public notOwner(_index) {
         require(
             !rated[_index][msg.sender],
             "You have already rated this message"
@@ -102,11 +118,8 @@ contract ClassGroupChat {
         currentMessage.rating.total_raters += 1;
     }
 
-    function upvote(uint _index) public notOwner(_index){
-        require(
-            !upvoted[_index][msg.sender],
-            "You have already upvoted"
-        );
+    function upvote(uint _index) public notOwner(_index) {
+        require(!upvoted[_index][msg.sender], "You have already upvoted");
         Message storage currentMessage = messages[_index];
         upvoted[_index][msg.sender] = true;
         currentMessage.upvotes++;
